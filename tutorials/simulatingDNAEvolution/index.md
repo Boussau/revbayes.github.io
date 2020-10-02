@@ -10,7 +10,43 @@ prerequisites:
 redirect: true
 ---
 
-Simulating DNA Sequences
+
+In this tutorial, you will develop an intuition for continuous-time Markov
+models used to describe how DNA sequences evolve along a phylogenetic tree.
+To this end, you will implement an algorithm simulating sequence evolution along
+ a branch.
+
+Running RevBayes
+===============
+{:.section}
+
+We will use RevBayes
+interactively by typing commands in the command-line console. One can either use RevBayes interactively or run an entire
+script. To execute the RevBayes binary, if this program is in your path,
+then you can simply type in your Unix terminal:
+
+```
+rb
+```
+{:.bash}
+
+When you execute the program, you will see a brief program information,
+including the current version number. Remember that more information can
+be obtained from [revbayes.github.io](https://revbayes.github.io/). When you execute
+the program with an additional filename,
+*e.g.,*
+
+```
+rb my_analysis.Rev
+```
+{:.bash}
+
+then RevBayes will run all commands specified in the file `my_analysis.Rev`.
+
+
+
+
+Simulating DNA Sequences along a branch
 ========================
 {:.section}
 
@@ -21,6 +57,11 @@ However, once one knows how to simulate along a branch, simulating along a tree 
 Simulating along a tree will therefore be left as an exercise to the reader.
 
 
+Simulations will be implemented in the rev language, and run in RevBayes.
+We assume that you have successfully installed RevBayes. If this
+isn't the case, then please consult [the website](https://revbayes.github.io/) on how to install
+RevBayes.
+
 Modeling character evolution
 ---------------------------------------------------
 {:.subsection}
@@ -28,10 +69,10 @@ We want to model how one site of a DNA sequence evolves through time.
 It starts in a DNA state $A$, $C$, $G$, or $T$, and undergoes mutations through time.
 Because we want a simple model for this tutorial, we are going to make a few
 hypotheses.
-First, we are going to assume that the rate of change is constant through time.
+First (hypothesis 1), we are going to assume that the rate of change is constant through time.
 This means that, in every small time interval $dt$, we have the same rate of change.
 In the literature, this hypothesis is often used to model sequence evolution along a branch.
-Second, we are going to assume that all types of changes between characters have
+Second (hypothesis 2), we are going to assume that all types of changes between characters have
  the same rate: the rate of change from $A$ to $C$ is the same as from $C$ to
  $A$, $G$ to $T$, etc. .
 In the literature, this hypothesis is made in the Jukes and Cantor model,
@@ -40,8 +81,88 @@ rates for transitions and transversions, and allow for different equilibrium
 frequencies for the bases $A$, $C$, $G$, and $T$. Those equilibrium frequencies
 correspond to the base frequencies one would obtain after simulating a large number
 of sites over a long (infinite) amount of time.
+Third (hypothesis 3), we are going to assume that the starting state ($A$, $C$, $G$, or $T$) is
+drawn randomly. For consistency with our choice to use the Jukes and Cantor
+model, we are going to assume that all possible bases are equally likely: each
+has a $25\%$ chance to be drawn.
+
+Now that we have explicited our three hypotheses, we need to turn them into a
+probabilistic model.
+Hypothesis 3 means that we want to draw our initial state from a discrete uniform
+distribution with 4 states.
+In RevBayes, we can do that using:
+```
+rUniformInteger(n=1, lower=1, upper=4)
+```
+
+This functions draws a single integer between 1 and 4.
+
+Hypothesis 2 means that, when a change occurs, there is an equal probability to
+move from the starting state to any of the three other states. To make our life simpler, we are going to
+allow that we pick the same starting state, $i.e.$ we allow changes from state
+$x$ to the same state $x$. As a result we can use the same function as above.
+
+Finally, we need to be able to draw times of occurrence for the changes, given
+the constant rate that we assumed in hypothesis 1. In this case, the exponential
+distribution is appropriate.
+
+```
+rexp(n=1, lambda=0.5)
+```
+This function draws a waiting time given a rate of occurrence of 0.5.
+
+-   What is the expected waiting time? You could answer this question by simulating
+a large number of waiting times and computing the average value (with the
+  function `mean`).
 
 
+Simulating character evolution
+---------------------------------------------------
+{:.subsection}
+Now that we have defined the probability distributions used in our simulation,
+we can use them together in a simulation algorithm, that we are going to
+implement in the rev language.
+The idea of the algorithm to simulate the evolution of a single site is as
+follows:
+- input : branch length, rate of evolution
+- start from a randomly drawn state at the root
+- repeat until t >= branch length:
+  - draw a waiting time t' until the next change
+    - compute t = t + t'
+    - if t >= branch length, no change occurs along the branch
+    - if t < branch length:
+      - draw a random state to obtain the new state
+
+By implementing these steps, we obtain an algorithm that simulates the evolution
+ of a single site.
+
+- Implement the algorithm above to simulate the evolution of a site. You will
+need the `while` loop in the rev language:
+
+```
+i = 0
+while (i <5) {
+print(i)
+i = i + 1
+}
+```
+You may also want to store variables in the while loop to keep a trace of what's
+happening. The rev language has vectors, which are handled as follows:
+
+```
+vec = v(5)
+vec.append(3)
+print(vec)
+```
+
+Finally you may find it useful to define a function, as in:
+```
+function RealPos square (Real x) {x*x}
+```
+
+
+
+####### RUBBISH BELOW
 
 Generating uniform and exponential random variables
 ---------------------------------------------------
