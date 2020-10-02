@@ -1,0 +1,21 @@
+branchLength = 10.0
+rate = 0.5
+
+
+function Integer[] simulBranch (branchLength, rate) {
+  time = 0
+  initialState = rUniformInteger(n=1, lower=1, upper=4)[1]
+  states = v(initialState)
+  while (time < branchLength) {
+    waitingTime = rexp(n=1, lambda=rate)[1]
+    print(waitingTime)
+    time = time + waitingTime
+    if (time < branchLength) {
+      states.append(rUniformInteger(n=1, lower=1, upper=4)[1])
+    }
+  }
+  print("Final time: " + time)
+  return states
+}
+
+simulBranch(branchLength, rate)
