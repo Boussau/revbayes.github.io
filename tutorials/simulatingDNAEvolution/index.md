@@ -65,6 +65,17 @@ RevBayes.
 Modeling character evolution
 ---------------------------------------------------
 {:.subsection}
+
+In this section, we first define our hypotheses for the model of character evolution,
+then we express them mathematically and use the rev language to implement them, and
+finally articulate them together into an algorithm to simulate the evolution of
+a site along a branch.
+
+
+Making explicit hypotheses
+---------------------------------------------------
+{:.subsubsection}
+
 We want to model how one site of a DNA sequence evolves through time.
 It starts in a DNA state $A$, $C$, $G$, or $T$, and undergoes mutations through time.
 Because we want a simple model for this tutorial, we are going to make a few
@@ -86,10 +97,24 @@ drawn randomly. For consistency with our choice to use the Jukes and Cantor
 model, we are going to assume that all possible bases are equally likely: each
 has a $25\%$ chance to be drawn.
 
+
+
+Mathematical expression of our hypotheses
+---------------------------------------------------
+{:.subsubsection}
+
 Now that we have explicited our three hypotheses, we need to turn them into a
 probabilistic model.
 Hypothesis 3 means that we want to draw our initial state from a discrete uniform
-distribution with 4 states.
+distribution with 4 states:
+
+$$
+state \approx {\mathbf U}(1,4)
+$$
+
+This distribution draws each of the four states (integers between 1 and 4) with
+the same probability $1/4=0.25$.
+
 In RevBayes, we can do that using:
 ```
 rUniformInteger(n=1, lower=1, upper=4)
@@ -97,28 +122,68 @@ rUniformInteger(n=1, lower=1, upper=4)
 
 This functions draws a single integer between 1 and 4.
 
+
+
 Hypothesis 2 means that, when a change occurs, there is an equal probability to
 move from the starting state to any of the three other states. To make our life simpler, we are going to
 allow that we pick the same starting state, $i.e.$ we allow changes from state
-$x$ to the same state $x$. As a result we can use the same function as above.
+$x$ to the same state $x$. As a result we can use the same distribution as above.
 
-Finally, we need to be able to draw times of occurrence for the changes, given
+Finally, we need to be able to draw waiting times between changes, given
 the constant rate that we assumed in hypothesis 1. In this case, the exponential
-distribution is appropriate.
+distribution is appropriate.  The exponential distribution looks like
+
+![](figures/exponential.png)
+
+$$
+f(waitingTime, \lambda) = \frac{\lambda}exp^(-\lambda x)
+$$
+
+To simulate a random draw from the exponential distribution in RevBayes, one can use:
 
 ```
 rexp(n=1, lambda=0.5)
 ```
 This function draws a waiting time given a rate of occurrence of 0.5.
 
+Exercises: characterizing the random draws in RevBayes
+---------------------------------------------------
+{:.subsubsection}
+
+
+-  Draw a large number of states. What are the probabilities of getting states
+1, 2, 3, 4? You may find vectors and their associated functionalities useful:
+
+```
+vec = v(5)
+vec.append(3)
+print(vec)
+vec.methods()
+vec2 = rep(x=5, n=2)
+print(vec2)
+help(vec2)
+?v
+```
+
+And you may also want `for` loops:
+
+```
+for (i in range 1:5) { print(i) }
+```
+
+
 -   What is the expected waiting time? You could answer this question by simulating
 a large number of waiting times and computing the average value (with the
   function `mean`).
 
+-   Draw a large number of waiting times and plot a histogram of them using R.
+Compare the histogram to an exponential distribution.
+
+
 
 Simulating character evolution
 ---------------------------------------------------
-{:.subsection}
+{:.subsubsection}
 Now that we have defined the probability distributions used in our simulation,
 we can use them together in a simulation algorithm, that we are going to
 implement in the rev language.
@@ -147,18 +212,13 @@ i = i + 1
 }
 ```
 You may also want to store variables in the while loop to keep a trace of what's
-happening. The rev language has vectors, which are handled as follows:
-
-```
-vec = v(5)
-vec.append(3)
-print(vec)
-```
+happening.
 
 Finally you may find it useful to define a function, as in:
 ```
 function RealPos square (Real x) {x*x}
 ```
+
 
 
 
