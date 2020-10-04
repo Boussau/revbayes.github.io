@@ -1,0 +1,111 @@
+################################################################################
+# Investigating the uniform discrete distribution
+################################################################################
+
+##########
+## In RevBayes, collect random draws from a uniform discrite distribution with 4 states:
+vec = rUniformInteger(n=1000, lower=1, upper=4)
+# Save the 1000 values into a file:
+write(vec, file="simulatedUnif.txt")
+
+## In the terminal, convert the output file into a format that R will be able to read:
+sed 's/\[//g' simulatedUnif.txt | sed 's/\]//g' | sed 's/\,/\n/g' | sed 's/ //g' > simulatedUnifForR.txt
+
+##########
+## In R, read the data and plot it against an exponential distribution:
+simulatedValues=read.table("simulatedUnifForR.txt", h=F)$V1
+
+# Count the different cases and compute their proportions:
+table(simulatedValues) / length(simulatedValues)
+
+
+################################################################################
+# Investigating the exponential distribution
+################################################################################
+
+##########
+## In RevBayes, collect random draws from an exponential of rate 0.1:
+vec = rexp(n=1000, lambda=0.1)
+# Save the 1000 values into a file:
+write(vec, file="simulatedExp.txt")
+
+## In the terminal, convert the output file into a format that R will be able to read:
+sed 's/\[//g' simulatedExp.txt | sed 's/\]//g' | sed 's/\,/\n/g' | sed 's/ //g' > simulatedExpForR.txt
+
+##########
+## In R, read the data and plot it against an exponential distribution:
+simulatedValues=read.table("simulatedExpForR.txt", h=F)$V1
+
+# (If we don't collect the values from RevBayes, we can use the following line
+# to simulate from within R:
+# simulatedValues = rexp(1000, rate=0.1)
+# )
+
+xfit<-seq(min(simulatedValues),max(simulatedValues),length=40)
+hist(simulatedValues, freq=FALSE, nc=40)
+lines(xfit, dexp(xfit, rate=0.1), col="blue", lwd=3)
+
+##########
+## It seems like RevBayes and R agree on the definition of an exponential distribution.
+
+
+################################################################################
+# Simulating one site, along a branch
+################################################################################
+
+branchLength = 10.0
+rate = 0.5
+
+
+function Integer[] simulOneSiteOnBranch (branchLength, rate) {
+  print("WaitingTime" + "\t" + "Time" + "\t" + "State")
+  time = 0
+  initialState = rUniformInteger(n=1, lower=1, upper=4)[1]
+  states = v(initialState)
+  print(0.0 + "\t" + 0.0 + "\t" + states[states.size()])
+  while (time < branchLength) {
+    waitingTime = rexp(n=1, lambda=rate)[1]
+    time = time + waitingTime
+    if (time < branchLength) {
+      states.append(rUniformInteger(n=1, lower=1, upper=4)[1])
+    }
+    print(waitingTime + "\t" + time + "\t" + states[states.size()])
+  }
+  return states
+}
+
+simulOneSiteOnBranch(branchLength, rate)
+
+
+################################################################################
+# Simulating N sites, along a branch, and keeping the end state at every site.
+################################################################################
+
+##########
+## Function that keeps the entire substitution histories
+
+function Integer[][] simulNSitesOnBranchFullHistory (Nsites, branchLength, rate) {
+  siteHistories = v(simulOneSiteOnBranch(branchLength, rate))
+  print(siteHistories)
+  for (site in 2:Nsites) {
+    siteHistories.append(simulOneSiteOnBranch(branchLength, rate))
+  }
+  return siteHistories
+}
+
+simulNSitesOnBranchFullHistory(10, branchLength, rate)
+
+##########
+## Function that keeps only the end states
+
+function Integer[] simulNSitesOnBranch (Nsites, branchLength, rate) {
+  singleHistory = simulOneSiteOnBranch(branchLength, rate)
+  siteHistories = v(singleHistory[singleHistory.size()])
+  for (site in 2:Nsites) {
+    singleHistory = simulOneSiteOnBranch(branchLength, rate)
+    siteHistories.append(singleHistory[singleHistory.size()])
+  }
+  return siteHistories
+}
+
+simulNSitesOnBranch(10, branchLength, rate)

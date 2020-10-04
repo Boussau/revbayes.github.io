@@ -1,0 +1,100 @@
+  initialState = rUniformInteger(n=1, lower=1, upper=4)[1]
+  states = v(initialState)
+  print(0.0 + "\\t" + 0.0 + "\\t" + states[states.size()])
+  while (time < branchLength) {
+    waitingTime = rexp(n=1, lambda=rate)[1]
+    time = time + waitingTime
+    if (time < branchLength) {
+      states.append(rUniformInteger(n=1, lower=1, upper=4)[1])
+    }
+    print(waitingTime + "\\t" + time + "\\t" + states[states.size()])
+  }
+  return states
+}
+simulOneSiteOnBranch(branchLength, rate)
+function Integer[] simulOneSiteOnBranch (branchLength, rate) {
+  print("WaitingTime" + "\\t" + "Time" + "\\t" + "State")
+  time = 0
+  initialState = rUniformInteger(n=1, lower=1, upper=4)[1]
+  states = v(initialState)
+  print(0.0 + "\\t" + 0.0 + "\\t" + states[states.size()])
+  while (time < branchLength) {
+    waitingTime = rexp(n=1, lambda=rate)[1]
+    time = time + waitingTime
+    if (time < branchLength) {
+      states.append(rUniformInteger(n=1, lower=1, upper=4)[1])
+    }
+    print(waitingTime + "\\t" + time + "\\t" + states[states.size()])
+  }
+  return states
+}
+simulOneSiteOnBranch(branchLength, rate)
+function Integer[][] simulNSitesOnBranch (Nsites, branchLength, rate) {
+  siteHistories = v(simulOneSiteOnBranch(branchLength, rate))
+  print(siteHistories)
+  for (site in 2:Nsites) {
+    siteHistories.append(simulOneSiteOnBranch(branchLength, rate))
+  }
+  return siteHistories
+}
+simulNSitesOnBranch(10, branchLength, rate)
+function Integer[][] simulNSitesOnBranch (Nsites, branchLength, rate) {
+  singleHistory = simulOneSiteOnBranch(branchLength, rate)
+  siteHistories = v(singleHistory[singleHistory.size()])
+  for (site in 2:Nsites) {
+    singleHistory = simulOneSiteOnBranch(branchLength, rate)
+    siteHistories.append(singleHistory[singleHistory.size()])
+  }
+  return siteHistories
+}
+simulNSitesOnBranch(10, branchLength, rate)
+function Integer[] simulNSitesOnBranch (Nsites, branchLength, rate) {
+  singleHistory = simulOneSiteOnBranch(branchLength, rate)
+  siteHistories = v(singleHistory[singleHistory.size()])
+  for (site in 2:Nsites) {
+    singleHistory = simulOneSiteOnBranch(branchLength, rate)
+    siteHistories.append(singleHistory[singleHistory.size()])
+  }
+  return siteHistories
+}
+simulNSitesOnBranch(10, branchLength, rate)
+q()
+?rep
+vec = v(5)
+vec.append(3)
+print(vec)
+vec2 = rep(5,2)
+print(vec2)
+vec2 = rep(x=5, n=2)
+print(vec2)
+help(vec2)
+help(vec)
+help(v)
+vec.help()
+vec.methods()
+help(rep)
+rexp(n=1000, lambda=0.1)
+vec.methods()
+vec=v(3,4)
+vec.methods()
+help()
+ls(all=true)
+write(vec, file="test.txt")
+simulatedValues=read.table("simulatedExpForR.txt", h=F)$V1
+xfit<-seq(min(simulatedValues),max(simulatedValues),length=40)
+hist(simulatedValues, freq=FALSE, nc=40)
+lines(xfit, dexp(xfit, rate=0.1), col="blue", lwd=3)
+read.table("simulatedExpForR.txt", h=F)
+vec = rexp(n=1000, rate=0.1)
+# Save the 1000 values into a file:
+write(vec, file="simulatedExp.txt")
+vec = rexp(n=1000, lambda=0.1)
+write(vec, file="simulatedExp.txt")
+rUniformInteger(n=10, lower=1, upper=4)
+vec=rUniformInteger(n=10, lower=1, upper=4)
+vec
+vec.methods()
+vec = rUniformInteger(n=1000, lower=1, upper=4)
+# Save the 1000 values into a file:
+write(vec, file="simulatedUnif.txt")
+q()

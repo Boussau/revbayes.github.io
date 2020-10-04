@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<link rel="icon" type="image/png" href="/assets/img/favicon.png" >
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="search-domain" value="http://localhost:4000/">
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/css/syntax.css">
+    <link rel="stylesheet" type="text/css" href="/assets/css/bootstrap.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/bootstrap-theme.css" />
+    <link rel="stylesheet" type="text/css" href="/assets/css/main.css" />
+    <title>RevBayes: Simulating DNA sequence evolution</title>
+  </head>
+  <body>
+    <div class="container">
+      <nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <a href="/" class="pull-left">
+        
+        <img class="navbar-logo" src="/assets/img/aquabayes-desaturated.png" alt="RevBayes Home" />
+        
+      </a>
+      
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar" align="right"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+
+    </div>
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li><a href="/download">Download</a></li>
+        <li><a href="/tutorials/">Tutorials</a></li>
+        <li><a href="/documentation/">Documentation</a></li>
+        <li><a href="https://revbayes.github.io/revscripter/">RevScripter</a></li>
+        <li><a href="/workshops/">Workshops</a></li>
+        <li><a href="/jobs/">Jobs</a></li>
+        <li><a href="/developer/">Developer</a></li>
+      </ul>
+      <!-- <form class="navbar-form navbar-right" role="search" id="search" onsubmit="google_search(); return false;">
+        <div class="form-group">
+          <input type="text" id="google-search" placeholder="Search..." aria-label="Google site search">
+        </div>
+      </form> -->
+    </div>
+  </div>
+</nav>
+
+      <div class="titlebar">
+	<h1 class="maintitle">Simulating DNA sequence evolution</h1>
+	<h3 class="subtitle">Simulating DNA sequence evolution in RevBayes</h3>
+	<h4 class="authors">Bastien Boussau</h4>
+  <h5>Last modified on October  4, 2020</h5>
+</div>
+
+
+<div class="sidebar no-print">
+<blockquote class="overview" id="overview">
+  <h2>Overview</h2>
+  
+  <div class="row">
+    <div class="col-md-9">
+        <strong>Prerequisites</strong>
+        
+          <ul id="prerequisites">
+          
+            <li><a href="/tutorials/intro/">Getting Started with RevBayes and Rev Language Syntax</a></li>
+          
+          </ul>
+        
+    </div>
+  </div>
+  
+</blockquote>
+
+
+
+
+
+</div>
+<p>In this tutorial, you will develop an intuition for continuous-time Markov
+models used to describe how DNA sequences evolve along a phylogenetic tree.
+To this end, you will implement an algorithm simulating sequence evolution along
+ a branch.</p>
+
+<h1 class="section" id="running-revbayes">Running RevBayes</h1>
+
+<p>We will use RevBayes
+interactively by typing commands in the command-line console. One can either use RevBayes interactively or run an entire
+script. To execute the RevBayes binary, if this program is in your path,
+then you can simply type in your Unix terminal:</p>
+
+<div class="bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rb
+</code></pre></div></div>
+
+<p>When you execute the program, you will see a brief program information,
+including the current version number. Remember that more information can
+be obtained from <a href="https://revbayes.github.io/">revbayes.github.io</a>. When you execute
+the program with an additional filename,
+<em>e.g.,</em></p>
+
+<div class="bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rb my_analysis.Rev
+</code></pre></div></div>
+
+<p>then RevBayes will run all commands specified in the file <code class="highlighter-rouge">my_analysis.Rev</code>.</p>
+
+<h1 class="section" id="simulating-dna-sequences-along-a-branch">Simulating DNA Sequences along a branch</h1>
+
+<p>In this tutorial, you will develop an intuition for continuous-time Markov models used to describe how DNA sequences evolve along a phylogenetic tree. These models most often assume that each site evolves independently of the other sites in the sequences. This assumption is very convenient: once one knows how to simulate the evolution of a single site, one just repeats the same process over and over again, and in the end, $voilà$, one has simulated the evolution of homologous sequences.
+In this tutorial we will focus on DNA sequences, but the same approach is used in models of codon or protein sequence evolution, as well as in models that describe the evolution of discrete characters.
+Our work will be to model the evolution of a DNA sequence along a branch, not along an entire tree.
+However, once one knows how to simulate along a branch, simulating along a tree is not difficult conceptually.
+Simulating along a tree will therefore be left as an exercise to the reader.</p>
+
+<p>Simulations will be implemented in the rev language, and run in RevBayes.
+We assume that you have successfully installed RevBayes. If this
+isn’t the case, then please consult <a href="https://revbayes.github.io/">the website</a> on how to install
+RevBayes.</p>
+
+<h2 class="subsection" id="modeling-character-evolution">Modeling character evolution</h2>
+
+<p>In this section, we first define our hypotheses for the model of character evolution,
+then we express them mathematically and use the rev language to implement them, and
+finally articulate them together into an algorithm to simulate the evolution of
+a site along a branch.</p>
+
+<h2 class="subsubsection" id="making-explicit-hypotheses">Making explicit hypotheses</h2>
+
+<p>We want to model how one site of a DNA sequence evolves through time.
+It starts in a DNA state $A$, $C$, $G$, or $T$, and undergoes mutations through time.
+Because we want a simple model for this tutorial, we are going to make a few
+hypotheses.
+First (hypothesis 1), we are going to assume that the rate of change is constant through time.
+This means that, in every small time interval $dt$, we have the same rate of change.
+In the literature, this hypothesis is often used to model sequence evolution along a branch.
+Second (hypothesis 2), we are going to assume that all types of changes between characters have
+ the same rate: the rate of change from $A$ to $C$ is the same as from $C$ to
+ $A$, $G$ to $T$, etc. .
+In the literature, this hypothesis is made in the Jukes and Cantor model,
+proposed in 1969. More recent models are less naive: for instance they allow for different
+rates for transitions and transversions, and allow for different equilibrium
+frequencies for the bases $A$, $C$, $G$, and $T$. Those equilibrium frequencies
+correspond to the base frequencies one would obtain after simulating a large number
+of sites over a long (infinite) amount of time.
+Third (hypothesis 3), we are going to assume that the starting state ($A$, $C$, $G$, or $T$) is
+drawn randomly. For consistency with our choice to use the Jukes and Cantor
+model, we are going to assume that all possible bases are equally likely: each
+has a $25\%$ chance to be drawn.</p>
+
+<h2 class="subsubsection" id="mathematical-expression-of-our-hypotheses">Mathematical expression of our hypotheses</h2>
+
+<p>Now that we have explicited our three hypotheses, we need to turn them into a
+probabilistic model.
+Hypothesis 3 means that we want to draw our initial state from a discrete uniform
+distribution with 4 states:</p>
+
+\[f(state, minValue, maxValue) = \frac{1}{maxValue - minValue}\]
+
+<p>This distribution draws each of the four states (integers between 1 and 4) with
+the same probability $1/4=0.25$.</p>
+
+<p>In RevBayes, we can do that using:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rUniformInteger(n=1, lower=1, upper=4)
+</code></pre></div></div>
+
+<p>This functions draws a single integer between 1 and 4.</p>
+
+<p>Hypothesis 2 means that, when a change occurs, there is an equal probability to
+move from the starting state to any of the three other states. To make our life simpler, we are going to
+allow that we pick the same starting state, $i.e.$ we allow changes from state
+$x$ to the same state $x$. As a result we can use the same distribution as above.</p>
+
+<p>Finally, we need to be able to draw waiting times between changes, given
+the constant rate that we assumed in hypothesis 1. In this case, the exponential
+distribution is appropriate.  The exponential distribution looks like</p>
+
+<p><img src="figures/exponential.png" alt="" /></p>
+
+\[f(waitingTime, \lambda) = \lambda exp^{-\lambda x}\]
+
+<p>To simulate a random draw from the exponential distribution in RevBayes, one can use:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rexp(n=1, lambda=0.5)
+</code></pre></div></div>
+<p>This function draws a waiting time given a rate of occurrence of 0.5.</p>
+
+<h2 class="subsubsection" id="exercises-characterizing-the-random-draws-in-revbayes">Exercises: characterizing the random draws in RevBayes</h2>
+
+<ul>
+  <li>Draw a large number of states. What are the probabilities of getting states
+1, 2, 3, 4? You may find vectors and their associated functionalities useful:</li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vec = v(5)
+vec.append(3)
+print(vec)
+vec.methods()
+vec2 = rep(x=5, n=2)
+print(vec2)
+help(vec2)
+?v
+</code></pre></div></div>
+
+<p>And you may also want <code class="highlighter-rouge">for</code> loops:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>for (i in range 1:5) { print(i) }
+</code></pre></div></div>
+
+<p>It is also possible to export the contents of a vector to a file:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>write(vec, file="simulatedUnif.txt")
+</code></pre></div></div>
+
+<p>One can then read the file in R, provided some formatting has been done. For instance:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>## In the terminal, convert the output file into a format that R will be able to read:
+sed 's/\[//g' simulatedUnif.txt | sed 's/\]//g' | sed 's/\,/\n/g' | sed 's/ //g' &gt; simulatedUnifForR.txt
+
+##########
+## In R, read the data
+simulatedValues=read.table("simulatedUnifForR.txt", h=F)$V1
+
+</code></pre></div></div>
+
+<ul>
+  <li>
+    <p>What is the expected waiting time? You could answer this question by simulating
+a large number of waiting times and computing the average value (with the
+  function <code class="highlighter-rouge">mean</code>). What is the link between the \lambda rate value and the average
+  waiting time?</p>
+  </li>
+  <li>
+    <p>Draw a large number of waiting times and plot a histogram of them using R.
+Compare the histogram to an exponential distribution.</p>
+  </li>
+</ul>
+
+<h2 class="subsubsection" id="simulating-character-evolution">Simulating character evolution</h2>
+<p>Now that we have defined the probability distributions used in our simulation,
+we can use them together in a simulation algorithm, that we are going to
+implement in the rev language.</p>
+
+<p>We want to simulate over the length of the branch, which we name  <code class="highlighter-rouge">branch_length</code>.
+This branch length is specified $a priori$ (it is a parameter of the simulation
+  procedure). The rate of evolution is also specified $a priori$ and is named <code class="highlighter-rouge">rate</code>.
+Let’s say, for instance:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>branchLength = 10
+rate = 0.5
+</code></pre></div></div>
+
+<p>The idea of the algorithm is that we start from time $0$ and progress along
+the branch until its end, changing state after waiting times drawn from an
+exponential distribution.</p>
+
+<p>To write the simulation program, we first need a chronometer, which we
+represent by a variable <code class="highlighter-rouge">currentTime</code>.
+We start the simulation by setting ‘current_time’ to 0:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>currentTime = 0
+</code></pre></div></div>
+
+<p>Second, we need a variable that stores the current nucleotide state. We call
+this variable <code class="highlighter-rouge">currentState</code>. We set this variable by drawing the initial state
+according to hypothesis 3:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>currentState = rUniformInteger…
+</code></pre></div></div>
+
+<p>Then we simulate the successive events of state changes. Importantly, we don’t
+know $a priori$ how many substitution events we will have: it all depends on the
+waiting times drawn randomly from our exponential distribution. As a result, we need to
+use a while loop:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>while (currentTime &lt; branchLength)	{
+	…
+}
+</code></pre></div></div>
+
+<p>Within this while loop, we will write the sequence of simulation steps that we
+need to repeat until the chronometer has reached the total time branch_length.
+This sequence is as follows:</p>
+
+<ul>
+  <li>we randomly draw the waiting time <code class="highlighter-rouge">waitingTime</code> to the next event from an
+exponential:
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>waitingTime = rexp …
+</code></pre></div>    </div>
+  </li>
+  <li>we increase the value of the chronometer, by adding <code class="highlighter-rouge">waitingTime</code> to
+<code class="highlighter-rouge">currentTime</code>.
+    <div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>currentTime = currentTime + waitingTime
+</code></pre></div>    </div>
+  </li>
+  <li>here, we need to check whether we have reached total time T. If this is not
+the case, then, we choose the state after the substitution event, and the
+current state is now equal to this new state:</li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>currentState &lt;- …
+</code></pre></div></div>
+<p>Because it is in the while loop, this procedure (from drawing the waiting time
+  until setting the new current state) will run until the chronometer
+  <code class="highlighter-rouge">currentTime</code> has passed total time <code class="highlighter-rouge">branchLength</code>.</p>
+
+<p>By implementing these steps, we obtain an algorithm that simulates the evolution
+ of a single site.</p>
+
+<ul>
+  <li>Implement the algorithm above to simulate the evolution of a site. You will
+need the <code class="highlighter-rouge">while</code> loop in the rev language:</li>
+</ul>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>i = 0
+while (i &lt;5) {
+print(i)
+i = i + 1
+}
+</code></pre></div></div>
+<p>You may also want to store or print variables in the while loop to keep a trace of what’s
+happening.</p>
+
+<p>Finally you may find it useful to define a function, as in:</p>
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function RealPos square (Real x) {x*x}
+</code></pre></div></div>
+
+<h2 class="subsubsection" id="simulating-sequence-evolution">Simulating sequence evolution</h2>
+
+<ul>
+  <li>Build upon the function written above to simulate 1000 sites along a branch.</li>
+  <li>Keep a trace of the end states. What are the state frequencies? Is this
+expected?</li>
+  <li>Change the code to start all site simulations in state 1. Simulate 1000 sites
+again.</li>
+  <li>What are the end state frequencies now? Is this expected?</li>
+</ul>
+
+<h2 class="subsubsection" id="simulating-the-evolution-of-a-site-along-a-tree">Simulating the evolution of a site along a tree</h2>
+
+<p>In the above, we have implemented an algorithm to simulate the evolution of a
+site along a branch. We can build upon this algorithm to simulate the evolution
+of a site along an entire tree, for instance like this tree:</p>
+
+<p><img src="figures/simtree.png" alt="" /></p>
+
+<p>To do this, one has to realize that a tree is made of several individual branches.
+The algorithm to simulate along a tree would thus do something like this:</p>
+<ul>
+  <li>draw the state at the root</li>
+  <li>simulate along the left child branch
+    <ul>
+      <li>and repeat on the underlying branches</li>
+    </ul>
+  </li>
+  <li>simulate along the right child branch
+    <ul>
+      <li>and repeat on the underlying branches</li>
+    </ul>
+  </li>
+</ul>
+
+<p>It might help you to think about the following question: if a site ends its
+evolution on parent branch $parentBranch$ in state $x$,
+in what state should it start its evolution along the two children branches
+$leftChild$ and $rightChild$?</p>
+
+<ol class="bibliography"></ol>
+
+<script type="text/javascript">
+var _ol = document.querySelectorAll('ol');
+for (var i = 0, elem_ol; elem_ol = _ol[i]; i++) {
+	if ( elem_ol.classList == "bibliography" ) {
+		var _li = elem_ol.getElementsByTagName("li");
+		//for (var j = 0, elem_li; elem_li = _li[j]; j++)
+		//{
+		//	elem_li.innerHTML = elem_li.innerHTML.replace(/(https?:\/\/)([^\s<]+)/,"<a href=\"$1$2\">$2");
+		//}
+		if(_li.length > 0)
+			elem_ol.outerHTML = "<h2 class='references'>References</h2><hr class='references'>"+elem_ol.outerHTML
+	}
+}
+</script>
+
+      <br>
+<footer>
+  <div class="container">
+  <div class="row">
+    <div class="col-sm-12" align="center">
+      <a href="https://github.com/revbayes">GitHub</a> | <a href="/license">License</a> | <a href="/citation">Citation</a> | <a href="https://groups.google.com/forum/#!forum/revbayes-users">Users Forum</a>
+    </div>
+  </div>
+  <br>
+  </div>
+</footer>
+
+    </div>
+    <script src="/assets/js/vendor/jquery.min.js"></script>
+<script src="/assets/js/vendor/FileSaver.min.js"></script>
+<script src="/assets/js/vendor/jszip.min.js"></script>
+<script src="/assets/js/vendor/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+// Add default language
+$(":not(code).highlighter-rouge").each(function() {
+  
+  if( this.classList == "highlighter-rouge") {
+    this.classList = "Rev highlighter-rouge";
+  }
+  
+});
+// $("code.highlighter-rouge").each(function() {
+//   
+//   if( this.classList == "highlighter-rouge") {
+//       this.classList = "Rev highlighter-rouge";
+//   }
+//   
+// });
+</script>
+<script type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [['$','$'], ['\\(','\\)']],
+      processEscapes: true
+    }
+    });
+    MathJax.Hub.Queue(function () {
+      $(".aside").each(function() {
+          $("div .MathJax", this).hide();
+      });
+    });
+</script>
+<script src="/assets/js/base.js"></script>
+
+  </body>
+</html>
