@@ -1,3 +1,23 @@
+################################################################################
+# Investigating the uniform discrete distribution
+################################################################################
+
+##########
+## In RevBayes, collect random draws from a uniform discrite distribution with 4 states:
+vec = rUniformInteger(n=1000, lower=1, upper=4)
+# Save the 1000 values into a file:
+write(vec, file="simulatedUnif.txt")
+
+## In the terminal, convert the output file into a format that R will be able to read:
+sed 's/\[//g' simulatedUnif.txt | sed 's/\]//g' | sed 's/\,/\n/g' | sed 's/ //g' > simulatedUnifForR.txt
+
+##########
+## In R, read the data and plot it against an exponential distribution:
+simulatedValues=read.table("simulatedUnifForR.txt", h=F)$V1
+
+# Count the different cases and compute their proportions:
+table(simulatedValues) / length(simulatedValues)
+
 
 ################################################################################
 # Investigating the exponential distribution
